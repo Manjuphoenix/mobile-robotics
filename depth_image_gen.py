@@ -34,9 +34,10 @@ T_fin = concatenate_matrices(T_trans, T_rot)
 tmp_D = np.diag([1, -1, -1]).astype(float)
 
 ############ Read point cloud data to account for this flip ##########
-
+1776460517.915522575
 # pcd = o3d.io.read_point_cloud("/home/jarvis/a1/assets/q1_data/pcd/1776460386.414835930.pcd")
-pcd = o3d.io.read_point_cloud("/home/jarvis/a1/assets/q1_data/pcd/1776460674.916070223.pcd")
+# pcd = o3d.io.read_point_cloud("/home/jarvis/a1/assets/q1_data/pcd/1776460674.916070223.pcd")
+pcd = o3d.io.read_point_cloud("/home/jarvis/a1/assets/q1_data/pcd/1776460517.915522575.pcd")
 points = np.asarray(pcd.points)
 
 # import ipdb; ipdb.set_trace()
@@ -112,9 +113,10 @@ uv = uv[:, :2] / uv[:, 2:3]
 ###################################################################################
 ################ Code to save the lidar points projected to image ##############
 # File 3: 1776460674.916070223
-
+# 1776460517.915522575
 # image = cv2.imread("/home/jarvis/a1/assets/q1_data/rgb/1776460386.414835930.png")
-image = cv2.imread("/home/jarvis/a1/assets/q1_data/rgb/1776460674.916070223.png")
+# image = cv2.imread("/home/jarvis/a1/assets/q1_data/rgb/1776460674.916070223.png")
+image = cv2.imread("/home/jarvis/a1/assets/q1_data/rgb/1776460517.915522575.png")
 
 h, w = image.shape[:2]
 # # import ipdb; ipdb.set_trace()
@@ -154,21 +156,24 @@ for u, v, z in zip(u_cords, v_cords, depths):
 
 valid = depth_img > 0
 
+depth_vis = np.zeros((h, w), dtype=np.uint8)
+
 if valid.any():
-    d_min, d_max = depths.min(), depths.max()
-    depth_img = ((1 - depth_img - d_min / (d_max - d_min))).astype(np.uint8)
+    d_min, d_max = depth_img[valid].min(), depth_img[valid].max()
+    # depth_img = ((1 - depth_img - d_min / (d_max - d_min))).astype(np.uint8)
+    depth_vis[valid] = (255 * (1 - (depth_img[valid] - d_min) / (d_max - d_min + 1e-6))).astype(np.uint8)
 
 # # cv2.imwrite("Depth_1776460674.916070223.png", depth_img)
 # cv2.imwrite("Depth_1776460386.414835930.png", depth_img)
 
 
-kernel = np.ones((5,5), np.uint8)
-depth_dilated = cv2.dilate(depth_img, kernel)
+# kernel = np.ones((5,5), np.uint8)
+# depth_dilated = cv2.dilate(depth_img, kernel)
 
 
 # cv2.imwrite("Depth_1776460674.916070223.png", depth_img)
 # cv2.imwrite("Depth_dilated_1776460386.414835930.png", depth_dilated)
-cv2.imwrite("Depth_dilated_1776460674.916070223.png", depth_dilated)
+# cv2.imwrite("Depth_dilated_1776460674.916070223.png", depth_dilated)
 
 
 # max_depth = 50.0
@@ -184,3 +189,13 @@ cv2.imwrite("Depth_dilated_1776460674.916070223.png", depth_dilated)
 
 
 # cv2.imwrite("1Depth_dilated_1776460386.414835930.png", depth_img)
+
+
+depth_colored = cv2.applyColorMap(depth_vis, cv2.COLORMAP_JET)
+
+kernel = np.ones((5,5), np.uint8)
+depth_dilated = cv2.dilate(depth_colored, kernel)
+
+# cv2.imwrite("new_Depth_dilated_1776460674.916070223.png", depth_dilated)
+# cv2.imwrite("color_depth_1776_414835930.png", depth_dilated)
+cv2.imwrite("color_depth_177_915522575.png", depth_dilated)
