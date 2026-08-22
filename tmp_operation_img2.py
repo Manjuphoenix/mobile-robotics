@@ -35,7 +35,8 @@ tmp_D = np.diag([1, -1, -1]).astype(float)
 
 ############ Read point cloud data to account for this flip ##########
 
-pcd = o3d.io.read_point_cloud("/home/jarvis/a1/assets/q1_data/pcd/1776460517.915522575.pcd")
+# pcd = o3d.io.read_point_cloud("/home/jarvis/a1/assets/q1_data/pcd/1776460386.414835930.pcd")
+pcd = o3d.io.read_point_cloud("/home/jarvis/a1/assets/q1_data/pcd/1776460674.916070223.pcd")
 points = np.asarray(pcd.points)
 
 # import ipdb; ipdb.set_trace()
@@ -109,9 +110,10 @@ uv = (K_intrinsics @ filtered_new_points.T).T
 uv = uv[:, :2] / uv[:, 2:3]
 
 ###################################################################################
+# File 3: 1776460674.916070223
 
-
-image = cv2.imread("/home/jarvis/a1/assets/q1_data/rgb/1776460517.915522575.png")
+# image = cv2.imread("/home/jarvis/a1/assets/q1_data/rgb/1776460386.414835930.png")
+image = cv2.imread("/home/jarvis/a1/assets/q1_data/rgb/1776460674.916070223.png")
 
 h, w = image.shape[:2]
 # import ipdb; ipdb.set_trace()
@@ -121,8 +123,10 @@ in_bounds = (uv[:, 0] >= 0) & (uv[:,0] < w) & (uv[:,1] >= 0) & (uv[:, 1] < h)
 
 for (u, v), z in zip(uv[in_bounds], filtered_new_points[in_bounds][:, 2]):
     color = int(255 * min(z / 50, 1))
-    cv2.circle(image, (int(u), int(v)), 1, (0, 255 - color, color), -1)
+    # cv2.circle(image, (int(u), int(v)), 1, (0, 255 - color, color), 2)
+    cv2.drawMarker(image, (int(u), int(v)), (0, 255 - color, color), 
+    markerType = cv2.MARKER_CROSS, markerSize=3, thickness=2)
 
 
-cv2.imwrite("projected_img.png", image)
-
+# cv2.imwrite("projected_1776460386.414835930.png", image)
+cv2.imwrite("projected_1776460674.916070223.png", image)
