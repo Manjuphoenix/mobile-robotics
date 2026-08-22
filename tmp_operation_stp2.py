@@ -70,6 +70,7 @@ filtered_new_points = new_points[mask]
 
 
 import ipdb; ipdb.set_trace()
+uv = (K @ filtered_new_points.T).T
 uv = uv[:, :2] / uv[:, 2:3]
 
 
@@ -77,9 +78,11 @@ image = cv2.imread("/home/jarvis/a1/assets/q1_data/rgb/1776460517.915522575.png"
 
 h, w = image.shape[:2]
 import ipdb; ipdb.set_trace()
-in_bounds = (uv[:, 0] >= 0) & (uv[:, 0] < w) & (uv[:1] >= 0) & (uv[:, 0] < h)
+# in_bounds = (uv[:, 0] >= 0) & (uv[:, 0] < w) & (uv[:1] >= 0) & (uv[:, 0] < h)
 
-for (u, v), z in zip(uv[in_bounds], filtered_new_points[mask][in_bounds][:, 2]):
+in_bounds = (uv[:,0] >= 0) & (uv[:,0] < w) & (uv[:,1] >= 0) & (uv[:,1] < h)
+
+for (u, v), z in zip(uv[in_bounds], filtered_new_points[in_bounds][:, 2]):
     color = int(255 * min(z / 50, 1))
     cv2.circle(img, (int(u), int(v)), 1, (0, 255 - color, color), -1)
 
