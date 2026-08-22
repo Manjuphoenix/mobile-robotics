@@ -44,7 +44,19 @@ rotation_matrix = np.array([[r00, r01, r02],
 rotation_matrix = np.linalg.inv(rotation_matrix)
 
 
-print(rotation_matrix)
+transition_matrix = np.zeros([4,4])
+transition_matrix[:-1, :-1] += rotation_matrix
+transition_matrix[:3, 3:] += translation_vector
+transition_matrix[-1, -1] += 1
+
+tmp_D = np.diag([1, -1, -1, 1])
+
+transition_matrix_flipped = tmp_D @ transition_matrix
+
+# import ipdb; ipdb.set_trace()
+
+rotation_matrix_fin = transition_matrix_flipped[:-1, :-1]
+translation_vector_fin = transition_matrix[:3, 3:]
 
 
 pcd = o3d.io.read_point_cloud("/home/jarvis/a1/assets/q1_data/pcd/1776460517.915522575.pcd")
@@ -61,7 +73,7 @@ K_intrinsics = np.array([[6.442133178710937500e+02, 0.000000000000000000e+00, 6.
 # o3d.utility.Vector3dVector
 
 
-points_in_camera_frame = (rotation_matrix @ points.T + translation_vector)
+points_in_camera_frame = (rotation_matrix_fin @ points.T + translation_vector_fin)
 
 
 new_points = np.ascontiguousarray(points_in_camera_frame.T, dtype=np.float64)
@@ -69,25 +81,25 @@ mask = new_points[:, 2] > 0
 filtered_new_points = new_points[mask]
 
 
-import ipdb; ipdb.set_trace()
-uv = (K @ filtered_new_points.T).T
+# import ipdb; ipdb.set_trace()
+uv = (K_intrinsics @ filtered_new_points.T).T
 uv = uv[:, :2] / uv[:, 2:3]
 
 
 image = cv2.imread("/home/jarvis/a1/assets/q1_data/rgb/1776460517.915522575.png")
 
 h, w = image.shape[:2]
-import ipdb; ipdb.set_trace()
+# import ipdb; ipdb.set_trace()
 # in_bounds = (uv[:, 0] >= 0) & (uv[:, 0] < w) & (uv[:1] >= 0) & (uv[:, 0] < h)
 
 in_bounds = (uv[:,0] >= 0) & (uv[:,0] < w) & (uv[:,1] >= 0) & (uv[:,1] < h)
 
 for (u, v), z in zip(uv[in_bounds], filtered_new_points[in_bounds][:, 2]):
     color = int(255 * min(z / 50, 1))
-    cv2.circle(img, (int(u), int(v)), 1, (0, 255 - color, color), -1)
+    cv2.circle(image, (int(u), int(v)), 1, (0, 255 - color, color), -1)
 
 
-cv2.imwrite("projected_img.png", img)
+cv2.imwrite("projected_img.png", image)
 
 
 import ipdb; ipdb.set_trace()
