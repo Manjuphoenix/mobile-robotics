@@ -177,12 +177,53 @@ def matrix_to_quaternion(rotation_matrix: numpy.ndarray) -> numpy.ndarray:
 
 
 ip = q2_instance.primary_euler_angles
-euler_rotation_matrix = euler_xyz_to_matrix(ip[0], ip[1], ip[2])
+# euler_rotation_matrix = euler_xyz_to_matrix(ip[0], ip[1], ip[2])
 
-tmp_vector = [1, 1, 1]
-tmp_quat_vector = [1, 1, 1, 1]
+# tmp_vector = [1, 1, 1]
+# tmp_quat_vector = [1, 1, 1, 1]
 
-angle_axis_rotation_matrix = axis_angle_to_matrix(tmp_vector)
-quat_rotation_matrix = matrix_to_axis_angle()
-quat = matrix_to_quaternion()
+# angle_axis_rotation_matrix = axis_angle_to_matrix(tmp_vector)
+# quat_rotation_matrix = matrix_to_axis_angle()
+# quat = matrix_to_quaternion()
 # import ipdb; ipdb.set_trace()
+
+
+
+
+
+################################################################################
+
+
+def rotation_jacobian_xyz(
+    alpha: float,
+    beta: float,
+    gamma: float,
+    step: float = 1e-6,
+) -> numpy.ndarray:
+
+    """
+    alpha: Rotation about the x axis,
+    beta: Rotation about the y axis,
+    gamma: Rotation about the z axis,
+    step: 
+    """
+    parameters = np.array([alpha, beta, gamma])
+    jac = np.zeros((9,3))
+    for i in range(3):
+        param_pos, param_neg = parameters.copy(), parameters.copy()
+        param_pos += step, param_neg -= step
+        jac[:, i] = (euler_xyz_to_matrix(param_pos).reshape(-1) - euler_xyz_to_matrix[param_neg].reshape(-1)) / 2*step
+
+    # raise NotImplementedError("Compute the 9 x 3 central-difference Jacobian")
+    return jac
+
+
+def construct_gimbal_lock_pair(
+    alpha: float,
+    gamma: float,
+    offset: float,
+) -> tuple[numpy.ndarray, numpy.ndarray]:
+    tuple_1 = np.array([alpha, math.pi/2, gamma])
+    tuple_2 = np.array([alpha+offset, math.pi/2, gamma+offset])
+    # raise NotImplementedError("Construct two equivalent Euler tuples")
+    return (tuple_1, tuple_2)
