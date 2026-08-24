@@ -167,11 +167,11 @@ def matrix_to_quaternion(rotation_matrix: numpy.ndarray) -> numpy.ndarray:
     """ 
 
     r = rotation_matrix
-    q_0 = (0.5)*(math.sqrt(1+ r[1][1] + r[2][2] + r[3][3]))
+    q_0 = (0.5)*(math.sqrt(1+ r[0][0] + r[1][1] + r[2][2]))
 
-    q_1, q_2, q_3 = (1/4*q_0)*np.array([[r[3][2]-r[2][3],
-                                                    r[1][3] - r[3][1],
-                                                    r[2][1] - r[1][2]]])
+    q_1, q_2, q_3 = (1/4*q_0)*np.array([[r[2][1]-r[1][2],
+                                                    r[0][2] - r[2][0],
+                                                    r[1][0] - r[0][1]]])
     # raise NotImplementedError("Implement the inverse quaternion conversion")
     return np.array(q_1, q_2, q_3, q_0)
 
