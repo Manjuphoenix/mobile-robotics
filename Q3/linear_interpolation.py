@@ -1,4 +1,6 @@
 import numpy as np
+import open3d as o3d
+
 
 def random_unit_quaternion(rng):
     """
@@ -60,14 +62,45 @@ def random_transformation_matrix(translation_range=(-1.0, 1.0), seed=None):
 
 
 if __name__ == "__main__":
-    T1 = random_transformation_matrix(translation_range=(-0.5, 0.5), seed=1)
-    T2 = random_transformation_matrix(translation_range=(-0.5, 0.5), seed=2)
+    T1 = random_transformation_matrix(translation_range=(-0.1, 0.4), seed=1)
     
     print("T1 =\n", T1)
-    print("\nT2 =\n", T2)
+    # print("\nT2 =\n", T2)
     
     # Sanity checks: rotation part should be orthonormal with det = 1
-    for name, T in [("T1", T1), ("T2", T2)]:
-        R = T[:3, :3]
-        print(f"\n{name} det(R) = {np.linalg.det(R):.4f}")
-        print(f"{name} R @ R.T ≈ I:\n{np.round(R @ R.T, 4)}")
+    # for name, T in [("T1", T1), ("T2", T2)]:
+    #     R = T[:3, :3]
+    #     print(f"\n{name} det(R) = {np.linalg.det(R):.4f}")
+    #     print(f"{name} R @ R.T ≈ I:\n{np.round(R @ R.T, 4)}")
+
+    # Read the toothless point cloud data here..
+    pcd = o3d.io.read_point_cloud("/home/jarvis/a1/assets/toothless.ply")
+    points = np.asarray(pcd.points)
+    # o3d.visualization.draw_geometries([pcd])
+
+    R1 = T1[:3, :3]
+    Tl1 = T1[:3, 3:]
+
+
+    T2 = random_transformation_matrix(translation_range=(-0.5, 0.9), seed=10)
+    R2 = T2[:3, :3]
+    Tl2 = T2[:3, 3:]
+
+    points_in_frame1 = (R1 @ points.T + Tl1)
+    new_points_f1 = np.ascontiguousarray(points_in_frame1.T, dtype=np.float64)
+
+    pcd_f1 = o3d.geometry.PointCloud()
+    pcd_f1.points =  o3d.utility.Vector3dVector(new_points_f1)
+
+
+    points_in_frame2 = (R1 @ points.T + Tl1)
+    new_points_f2 = np.ascontiguousarray(points_in_frame2.T, dtype=np.float64)
+
+    pcd_f2 = o3d.geometry.PointCloud()
+    pcd_f2.points =  o3d.utility.Vector3dVector(new_points_f2)
+
+    pcd = o3d.io.read_point_cloud("/home/jarvis/a1/assets/q1_data/pcd/1776460674.916070223.pcd")
+    points = np.asarray(pcd.points)
+
+    import ipdb; ipdb.set_trace()
+
