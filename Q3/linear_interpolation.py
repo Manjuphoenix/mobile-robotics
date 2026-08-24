@@ -77,7 +77,7 @@ def interpolate_transforms(T1, T2, step):
 
 
 if __name__ == "__main__":
-    T1 = random_transformation_matrix(translation_range=(-0.1, 0.4), seed=1)
+    T1 = random_transformation_matrix(translation_range=(-20.0, 20.0), seed=1)
     
     print("T1 =\n", T1)
     # print("\nT2 =\n", T2)
@@ -97,7 +97,7 @@ if __name__ == "__main__":
     Tl1 = T1[:3, 3:]
 
 
-    T2 = random_transformation_matrix(translation_range=(-0.5, 0.9), seed=10)
+    T2 = random_transformation_matrix(translation_range=(-30.0, 30.0), seed=10)
     R2 = T2[:3, :3]
     Tl2 = T2[:3, 3:]
 
@@ -120,7 +120,7 @@ if __name__ == "__main__":
     # import ipdb; ipdb.set_trace()
     
     output_dir = "linear_interpolation"
-    n_steps = 50
+    n_steps = 70
 
     os.makedirs(output_dir, exist_ok=True)
     vis = o3d.visualization.Visualizer()
