@@ -146,6 +146,8 @@ if __name__ == "__main__":
     # pcd = o3d.io.read_point_cloud("/Users/manjunath/mobile-robotics/assets/toothless.ply")
     pcd = o3d.io.read_point_cloud("../assets/toothless.ply")
     points = np.asarray(pcd.points)
+    P0 = np.asarray(pcd.points)
+
     # o3d.visualization.draw_geometries([pcd])
 
     R1 = T1[:3, :3]
@@ -200,9 +202,10 @@ if __name__ == "__main__":
         T_s[:3, :3] = Rs
         T_s[:3, 3:] = t_s
 
-        import ipdb; ipdb.set_trace()
+        # import ipdb; ipdb.set_trace()
 
-        P_s = ((np.asarray(pcd_f1.points) @ T_s[:3, :3]).T + T_s[:3, 3:]).T
+        # P_s = ((np.asarray(pcd_f1.points) @ T_s[:3, :3]).T + T_s[:3, 3:]).T
+        P_s = ((P0 @ T_s[:3, :3]).T + T_s[:3, 3:]).T
 
 
 
