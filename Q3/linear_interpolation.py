@@ -1,5 +1,7 @@
 import numpy as np
 import open3d as o3d
+import os
+import imageio
 
 
 def random_unit_quaternion(rng):
@@ -61,6 +63,19 @@ def random_transformation_matrix(translation_range=(-1.0, 1.0), seed=None):
     return T
 
 
+def interpolate_transforms(T1, T2, step):
+    R1, R2 = T1[:3, :3], T2[:3, :3]
+    Tl1, Tl2 = T1[:3, 3:], T2[:3, 3:]
+
+    T = np.eye(4)
+
+    T = (1-3)*T1 + s*T2
+
+    return T
+
+
+
+
 if __name__ == "__main__":
     T1 = random_transformation_matrix(translation_range=(-0.1, 0.4), seed=1)
     
@@ -74,7 +89,7 @@ if __name__ == "__main__":
     #     print(f"{name} R @ R.T ≈ I:\n{np.round(R @ R.T, 4)}")
 
     # Read the toothless point cloud data here..
-    pcd = o3d.io.read_point_cloud("/home/jarvis/a1/assets/toothless.ply")
+    pcd = o3d.io.read_point_cloud("/Users/manjunath/mobile-robotics/assets/toothless.ply")
     points = np.asarray(pcd.points)
     # o3d.visualization.draw_geometries([pcd])
 
@@ -99,8 +114,43 @@ if __name__ == "__main__":
     pcd_f2 = o3d.geometry.PointCloud()
     pcd_f2.points =  o3d.utility.Vector3dVector(new_points_f2)
 
-    pcd = o3d.io.read_point_cloud("/home/jarvis/a1/assets/q1_data/pcd/1776460674.916070223.pcd")
-    points = np.asarray(pcd.points)
+    # pcd = o3d.io.read_point_cloud("/Users/manjunath/mobile-robotics/assets/q1_data/pcd/1776460674.916070223.pcd")
+    # points = np.asarray(pcd.points)
 
-    import ipdb; ipdb.set_trace()
+    # import ipdb; ipdb.set_trace()
+    
+    output_dir = "linear_interpolation"
+    n_steps = 50
+
+    os.makedirs(output_dir, exist_ok=True)
+    vis = o3d.visualization.Visualizer()
+    vis.create_window(visible=False, width=800, height=600)
+
+    frame_paths = []
+
+    for i, s in enumerate(np.linspace(0, 1, n_steps)):
+        T_s = interpolate_transforms(T1, T2, s)
+        # import ipdb; ipdb.set_trace()
+        P_s = ((np.asarray(pcd_f1.points) @ T_s[:3, :3]).T + T_s[:3, 3:]).T
+
+        pcd_frame_for_gif = o3d.geometry.PointCloud()
+        pcd_frame_for_gif.points = o3d.utility.Vector3dVector(P_s)
+
+        if pcd.has_colors():
+            pcd_frame_for_gif.colors = pcd.colors
+
+        vis.clear_geometries()
+        vis.add_geometry(pcd_frame_for_gif)
+        vis.poll_events()
+        vis.update_renderer()
+
+        frame_path = os.path.join(output_dir, f"frame_{i:03d}.png")
+        vis.capture_screen_image(frame_path)
+        frame_paths.append(frame_path)
+
+    vis.destroy_window()
+
+    images = [imageio.imread(p) for p in frame_paths]
+    imageio.mimsave("linear_interpolation.gif", images, fps=15)
+    print(f"Images saved succesfully at{output_dir}")
 
