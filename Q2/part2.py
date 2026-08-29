@@ -228,32 +228,3 @@ def construct_gimbal_lock_pair(
     # raise NotImplementedError("Construct two equivalent Euler tuples")
     return (tuple_1, tuple_2)
 
-
-#######################################################################################################
-
-def quaternion_multiply(
-    left_quaternion: numpy.ndarray,
-    right_quaternion: numpy.ndarray,
-) -> numpy.ndarray:
-    # raise NotImplementedError("Implement the Hamilton product")
-    x1, y1, z1, w1 = left_quaternion[0], left_quaternion[1], left_quaternion[2], left_quaternion[3]
-    x2, y2, z2, w2 = right_quaternion[0], right_quaternion[1], right_quaternion[2], right_quaternion[3]
-
-    return np.array([w1*w2 - x1*x2 - y1*y2 - z1*z2],
-                     [w1*x2 + x1*w2 + y1*z2 - z1*y2],
-                     [w1*y2 - x1*z2 + y1*w2 + z1*x2],
-                     [w1*z2 + x1*y2 - y1*x2 + z1*w2])
-
-
-
-primary_quat = matrix_to_quaternion()   # Pass the primary rotation matrix here...
-second_quat = matrix_to_quaternion()   # Pass the secondary rotation matrix here...
-
-hamilton_quat = quaternion_multiply(primary_quat, second_quat)
-hamilaton_rotation_matrix = quaternion_to_matrix(hamilton_quat)
-
-primary_rotation_matrix = quaternion_to_matrix(primary_quat)
-secondary_rotation_matrix = quaternion_to_matrix(second_quat)
-
-if np.allclose(hamilaton_rotation_matrix, secondary_rotation_matrix @ primary_rotation_matrix):
-    print("HEY its working and both are the same....")
