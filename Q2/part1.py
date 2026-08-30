@@ -153,6 +153,13 @@ def quaternion_to_matrix(quaternion: numpy.ndarray) -> numpy.ndarray:
     quaternion: a numpy array with 4 elements, [x, y, z, w] -> x, y, z are the unit coordinate axes,
     and w is the real number that represents the analge of rotation...
     """
+    
+    x, y, z, w = quaternion[0], quaternion[1], quaternion[2], quaternion[3]
+
+    quaternion[0] = w
+    quaternion[1] = x
+    quaternion[2] = y
+    quaternion[3] = z
 
     q = quaternion
 
@@ -161,7 +168,6 @@ def quaternion_to_matrix(quaternion: numpy.ndarray) -> numpy.ndarray:
                                     [2*(q[1]*q[3] - q[0]*q[2]), 2*(q[0]*q[1] + q[2]*q[3]), (q[0]**2 - q[1]**2 - q[2]**2 + q[3]**2)]])
     # raise NotImplementedError("Implement the quaternion conversion")
 
-    import ipdb; ipdb.set_trace()
     return quat_rotation_matrix
 
 
@@ -189,6 +195,9 @@ def orthogonality_error(R):
     return np.linalg.norm(R @ R.T - np.eye(3))
 
 
+def max_transf_point_error(R_true, R_reconstructed, points):
+    errors = [np.linalg.norm(R_true @ p - R_reconstructed @ p) for p in points]
+    return max(errors)
 
 ########################## Testing for table generation #############################
 
@@ -259,6 +268,24 @@ rotation_back_from_quat = quaternion_to_matrix(quat_converted)
 
 angle_axis_error = np.linalg.norm(true_rotation_matrix - rotation_back_from_angle_axis, "fro")
 quat_error = np.linalg.norm(true_rotation_matrix - rotation_back_from_quat, "fro")
+
+
+######### For maximum transformed points error #############
+test_points = [
+    np.array([1, 0, 0]),
+    np.array([0, 1, 0]),
+    np.array([0, 0, 1]),
+    np.array([1, 2, 3]),
+]
+
+aa_max_error = max_transf_point_error(
+    true_rotation_matrix, rotation_back_from_angle_axis, test_points
+)
+
+quat_max_error = max_transf_point_error(
+    true_rotation_matrix, rotation_back_from_quat, test_points
+)
+
 
 import ipdb; ipdb.set_trace()
 

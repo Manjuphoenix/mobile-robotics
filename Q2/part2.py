@@ -207,12 +207,21 @@ def rotation_jacobian_xyz(
     gamma: Rotation about the z axis,
     step: 
     """
+
+    def vec_R(a, b, g):
+        return euler_xyz_to_matrix(a, b, g).flatten()
+
+
     parameters = np.array([alpha, beta, gamma])
     jac = np.zeros((9,3))
     for i in range(3):
-        param_pos, param_neg = parameters.copy(), parameters.copy()
-        param_pos += step, param_neg -= step
-        jac[:, i] = (euler_xyz_to_matrix(param_pos).reshape(-1) - euler_xyz_to_matrix[param_neg].reshape(-1)) / 2*step
+        # param_pos, param_neg = parameters.copy(), parameters.copy()
+        # param_pos = param_pos + step
+        # param_neg = param_neg - step
+
+        param_pos = parameters.copy(); param_pos[i] += step
+        param_neg = parameters.copy(); param_neg[i] -= step
+        jac[:, i] = (vec_R(*param_pos) - vec_R(*param_neg)) / (2 *step)
 
     # raise NotImplementedError("Compute the 9 x 3 central-difference Jacobian")
     return jac
@@ -228,3 +237,51 @@ def construct_gimbal_lock_pair(
     # raise NotImplementedError("Construct two equivalent Euler tuples")
     return (tuple_1, tuple_2)
 
+
+alpha_fixed = q2_instance.primary_euler_angles[0]
+beta_start = q2_instance.primary_euler_angles[1]
+gamma_fixed = q2_instance.primary_euler_angles[2]
+
+
+betas = np.linspace(beta_start, np.pi /2, 100)
+
+singular_values = np.zeros((len(betas), 3))
+RANK_TOL = 1e-6
+
+
+ranks = []
+for idx, b in enumerate(betas):
+    J = rotation_jacobian_xyz(alpha_fixed, b, gamma_fixed)
+    s = np.linalg.svd(J, compute_uv=False)
+    singular_values[idx] = s
+    ranks.append(int(sum(s > RANK_TOL)))
+
+
+print("Rank at first sample (beta: %.6f): %d" % (betas[0], ranks[0]))
+print("Rank at final sample (beta: %.6f): %d" % (betas[-1], ranks[-1]))
+
+import matplotlib.pyplot as plt
+plt.plot(betas, singular_values[:, 0], label="sigma_1")
+plt.plot(betas, singular_values[:, 1], label="sigma_2")
+plt.plot(betas, singular_values[:, 2], label="sigma_3")
+
+plt.axvline(np.pi/2, linestyle="--", color="gray", label="beta = pi/2")
+plt.xlabel("beta")
+plt.ylabel("singular value")
+plt.legend()
+plt.title("singluar values of J(alpha, beta, gamma) vs beta")
+plt.show()
+
+
+################ FOR 2 angles of beta that causes gimbal lock #######################
+pair1, pair2 = construct_gimbal_lock_pair(
+    q2_instance.gimbal_alpha,
+    q2_instance.gimbal_gamma,
+    q2_instance.gimbal_offset
+)
+
+R1 = euler_xyz_to_matrix(*pair1)
+R2 = euler_xyz_to_matrix(*pair2)
+print("Pair1: ", pair1)
+print("Pair2: ", pair2)
+print("Verification: Forbinus norm between two rotation matrices of the two different angles with same beta: ", np.linalg.norm(R1 - R2, "fro"))
