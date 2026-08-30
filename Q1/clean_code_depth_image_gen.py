@@ -3,6 +3,8 @@ import open3d as o3d
 import cv2
 from transformations import quaternion_matrix, translation_matrix, concatenate_matrices
 
+import matplotlib.cm as cm
+import matplotlib.pyplot as plt
 
 
 p = np.array([
@@ -33,9 +35,9 @@ tmp_D = np.diag([1, -1, -1]).astype(float)
 
 ############ Read point cloud data to account for this flip ##########
 # 1776460517.915522575
-# pcd = o3d.io.read_point_cloud("/home/jarvis/a1/assets/q1_data/pcd/1776460386.414835930.pcd")
+pcd = o3d.io.read_point_cloud("/home/jarvis/a1/assets/q1_data/pcd/1776460386.414835930.pcd")
 # pcd = o3d.io.read_point_cloud("/home/jarvis/a1/assets/q1_data/pcd/1776460674.916070223.pcd")
-pcd = o3d.io.read_point_cloud("/home/jarvis/a1/assets/q1_data/pcd/1776460517.915522575.pcd")
+# pcd = o3d.io.read_point_cloud("/home/jarvis/a1/assets/q1_data/pcd/1776460517.915522575.pcd")
 points = np.asarray(pcd.points)
 
 # import ipdb; ipdb.set_trace()
@@ -108,9 +110,9 @@ uv = uv[:, :2] / uv[:, 2:3]
 ################ Code to save the lidar points projected to image ##############
 # File 3: 1776460674.916070223
 # 1776460517.915522575
-# image = cv2.imread("/home/jarvis/a1/assets/q1_data/rgb/1776460386.414835930.png")
+image = cv2.imread("/home/jarvis/a1/assets/q1_data/rgb/1776460386.414835930.png")
 # image = cv2.imread("/home/jarvis/a1/assets/q1_data/rgb/1776460674.916070223.png")
-image = cv2.imread("/home/jarvis/a1/assets/q1_data/rgb/1776460517.915522575.png")
+# image = cv2.imread("/home/jarvis/a1/assets/q1_data/rgb/1776460517.915522575.png")
 
 h, w = image.shape[:2]
 
@@ -126,28 +128,53 @@ u_cords = uv[in_bounds][:, 0].astype(np.int32)
 v_cords = uv[in_bounds][:, 1].astype(np.int32)
 depths = filtered_new_points[in_bounds][:, 2]
 
-for u, v, z in zip(u_cords, v_cords, depths):
-    if depth_img[v, u] == 0 or z < depth_img[v,u]:
-        depth_img[v, u] = z
+# for u, v, z in zip(u_cords, v_cords, depths):
+#     if depth_img[v, u] == 0 or z < depth_img[v,u]:
+#         depth_img[v, u] = z
 
 
-valid = depth_img > 0
+# valid = depth_img > 0
 
-depth_vis = np.zeros((h, w), dtype=np.uint8)
+# depth_vis = np.zeros((h, w), dtype=np.uint8)
 
-if valid.any():
-    d_min, d_max = depth_img[valid].min(), depth_img[valid].max()
-    # depth_img = ((1 - depth_img - d_min / (d_max - d_min))).astype(np.uint8)
-    depth_vis[valid] = (255 * (1 - (depth_img[valid] - d_min) / (d_max - d_min + 1e-6))).astype(np.uint8)
-
-
-depth_colored = cv2.applyColorMap(depth_vis, cv2.COLORMAP_JET)
+# if valid.any():
+#     d_min, d_max = depth_img[valid].min(), depth_img[valid].max()
+#     # depth_img = ((1 - depth_img - d_min / (d_max - d_min))).astype(np.uint8)
+#     depth_vis[valid] = (255 * (1 - (depth_img[valid] - d_min) / (d_max - d_min + 1e-6))).astype(np.uint8)
 
 
-kernel = np.ones((3,3), np.uint8)
-depth_dilated = cv2.dilate(depth_colored, kernel)
-import ipdb; ipdb.set_trace()
+# depth_colored = cv2.applyColorMap(depth_vis, cv2.COLORMAP_JET)
 
-# cv2.imwrite("new_Depth_dilated_1776460674.916070223.png", depth_dilated)
-# cv2.imwrite("color_depth_1776_414835930.png", depth_dilated)
-cv2.imwrite("rgb_color_depth_177_915522575.png", depth_dilated)
+
+# kernel = np.ones((3,3), np.uint8)
+# depth_dilated = cv2.dilate(depth_colored, kernel)
+# import ipdb; ipdb.set_trace()
+
+# # cv2.imwrite("new_Depth_dilated_1776460674.916070223.png", depth_dilated)
+# # cv2.imwrite("color_depth_1776_414835930.png", depth_dilated)
+# cv2.imwrite("rgb_color_depth_177_915522575.png", depth_dilated)
+
+
+########## Projecting depth points on RGB image ##############
+
+overlay = image.copy()
+depths_min = depths.min()
+depths_max = depths.max()
+
+
+depths_clipped = np.clip(depths, depths_min, depths_max)
+depths_norm = (depths_clipped - depths_min) / (depths_max - depths_min + 1e-8)
+
+####### map normalized depth to RGB color via matplotlib colormap #############
+cmap = cm.get_cmap("jet")
+colors = (cmap(depths_norm)[:, :3]*255).astype(np.uint8)
+
+# important: sort by depth descending so near points drawn last (on top)
+order = np.argsort(-depths_clipped)
+u_s, v_s, colors_s = u_cords[order], v_cords[order], colors[order]
+
+for ui, vi, color in zip(u_s.astype(int), v_s.astype(int), colors_s):
+    if 0 <= ui < w and 0 <= vi < h:
+        cv2.circle(overlay, (ui, vi), 2, color.tolist(), thickness=-1)
+
+cv2.imwrite("414835930.png", overlay)
