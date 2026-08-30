@@ -223,7 +223,9 @@ hamilaton_rotation_matrix = quaternion_to_matrix(hamilton_quat)
 primary_rotation_matrix = quaternion_to_matrix(primary_quat)
 secondary_rotation_matrix = quaternion_to_matrix(second_quat)
 
-abc = secondary_rotation_matrix @ primary_rotation_matrix
+# abc = secondary_rotation_matrix @ primary_rotation_matrix  # if you change the order no doubt this also holds
+# property of rotational matrix (det =1) but the error between this product and hamilton is very high...
+abc =  primary_rotation_matrix @ secondary_rotation_matrix
 
 error = np.linalg.norm(hamilaton_rotation_matrix - abc, "fro")
 
