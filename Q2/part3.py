@@ -135,11 +135,14 @@ def matrix_to_axis_angle(
     """
     rotation_matrix is the input which has to be converted back to the axis vector k and angle
     """
-    angle = math.acos((rotation_matrix[1][1] + rotation_matrix[2][2] + rotation_matrix[3][3] -1)/2)
+
+    # import ipdb; ipdb.set_trace()
+    angle = math.acos((rotation_matrix[0][0] + rotation_matrix[1][1] + rotation_matrix[2][2] -1)/2)
     
-    k_vector = (1/(2*math.sin(angle))*(np.array([[rotation_matrix[3][2] - rotation_matrix[2][3],
-                                                [rotation_matrix[1][3] - rotation_matrix[3][1],
-                                                [rotation_matrix[2][1] - rotation_matrix[1][2]]]]])))
+    # import ipdb; ipdb.set_trace()
+    k_vector = 1/(2*math.sin(angle))*(np.array([rotation_matrix[2][1] - rotation_matrix[1][2],
+                                                rotation_matrix[0][2] - rotation_matrix[2][0],
+                                                rotation_matrix[1][0] - rotation_matrix[0][1]]))
 
     # raise NotImplementedError("Implement the inverse angle-axis conversion")
     return (k_vector, angle)
@@ -150,6 +153,13 @@ def quaternion_to_matrix(quaternion: numpy.ndarray) -> numpy.ndarray:
     quaternion: a numpy array with 4 elements, [x, y, z, w] -> x, y, z are the unit coordinate axes,
     and w is the real number that represents the analge of rotation...
     """
+    
+    x, y, z, w = quaternion[0], quaternion[1], quaternion[2], quaternion[3]
+
+    quaternion[0] = w
+    quaternion[1] = x
+    quaternion[2] = y
+    quaternion[3] = z
 
     q = quaternion
 
@@ -169,64 +179,14 @@ def matrix_to_quaternion(rotation_matrix: numpy.ndarray) -> numpy.ndarray:
     r = rotation_matrix
     q_0 = (0.5)*(math.sqrt(1+ r[0][0] + r[1][1] + r[2][2]))
 
-    q_1, q_2, q_3 = (1/4*q_0)*np.array([[r[2][1]-r[1][2],
+    q_vector = (1/(4*q_0))*np.array([r[2][1]-r[1][2],
                                                     r[0][2] - r[2][0],
-                                                    r[1][0] - r[0][1]]])
+                                                    r[1][0] - r[0][1]])
     # raise NotImplementedError("Implement the inverse quaternion conversion")
-    return np.array(q_1, q_2, q_3, q_0)
+    return np.array([q_vector[0], q_vector[1], q_vector[2], q_0])
 
 
 ip = q2_instance.primary_euler_angles
-# euler_rotation_matrix = euler_xyz_to_matrix(ip[0], ip[1], ip[2])
-
-# tmp_vector = [1, 1, 1]
-# tmp_quat_vector = [1, 1, 1, 1]
-
-# angle_axis_rotation_matrix = axis_angle_to_matrix(tmp_vector)
-# quat_rotation_matrix = matrix_to_axis_angle()
-# quat = matrix_to_quaternion()
-# import ipdb; ipdb.set_trace()
-
-
-
-
-
-################################################################################
-
-
-def rotation_jacobian_xyz(
-    alpha: float,
-    beta: float,
-    gamma: float,
-    step: float = 1e-6,
-) -> numpy.ndarray:
-
-    """
-    alpha: Rotation about the x axis,
-    beta: Rotation about the y axis,
-    gamma: Rotation about the z axis,
-    step: 
-    """
-    parameters = np.array([alpha, beta, gamma])
-    jac = np.zeros((9,3))
-    for i in range(3):
-        param_pos, param_neg = parameters.copy(), parameters.copy()
-        param_pos += step, param_neg -= step
-        jac[:, i] = (euler_xyz_to_matrix(param_pos).reshape(-1) - euler_xyz_to_matrix[param_neg].reshape(-1)) / 2*step
-
-    # raise NotImplementedError("Compute the 9 x 3 central-difference Jacobian")
-    return jac
-
-
-def construct_gimbal_lock_pair(
-    alpha: float,
-    gamma: float,
-    offset: float,
-) -> tuple[numpy.ndarray, numpy.ndarray]:
-    tuple_1 = np.array([alpha, math.pi/2, gamma])
-    tuple_2 = np.array([alpha+offset, math.pi/2, gamma+offset])
-    # raise NotImplementedError("Construct two equivalent Euler tuples")
-    return (tuple_1, tuple_2)
 
 
 #######################################PART 3################################################################
@@ -239,15 +199,23 @@ def quaternion_multiply(
     x1, y1, z1, w1 = left_quaternion[0], left_quaternion[1], left_quaternion[2], left_quaternion[3]
     x2, y2, z2, w2 = right_quaternion[0], right_quaternion[1], right_quaternion[2], right_quaternion[3]
 
-    return np.array([w1*w2 - x1*x2 - y1*y2 - z1*z2],
-                     [w1*x2 + x1*w2 + y1*z2 - z1*y2],
-                     [w1*y2 - x1*z2 + y1*w2 + z1*x2],
-                     [w1*z2 + x1*y2 - y1*x2 + z1*w2])
+    return np.array([w1*x2 + x1*w2 + y1*z2 - z1*y2,
+                     w1*y2 - x1*z2 + y1*w2 + z1*x2,
+                     w1*z2 + x1*y2 - y1*x2 + z1*w2,
+                     w1*w2 - x1*x2 - y1*y2 - z1*z2,])
 
 
 
-primary_quat = matrix_to_quaternion()   # Pass the primary rotation matrix here...
-second_quat = matrix_to_quaternion()   # Pass the secondary rotation matrix here...
+primary_angles = q2_instance.primary_euler_angles
+secondary_angles = q2_instance.secondary_euler_angles
+
+
+R_primary = euler_xyz_to_matrix(*primary_angles)
+R_secondary = euler_xyz_to_matrix(*secondary_angles)
+
+
+primary_quat = matrix_to_quaternion(R_primary)   # Pass the primary rotation matrix here...
+second_quat = matrix_to_quaternion(R_secondary)   # Pass the secondary rotation matrix here...
 
 hamilton_quat = quaternion_multiply(primary_quat, second_quat)
 hamilaton_rotation_matrix = quaternion_to_matrix(hamilton_quat)
@@ -255,5 +223,11 @@ hamilaton_rotation_matrix = quaternion_to_matrix(hamilton_quat)
 primary_rotation_matrix = quaternion_to_matrix(primary_quat)
 secondary_rotation_matrix = quaternion_to_matrix(second_quat)
 
+abc = secondary_rotation_matrix @ primary_rotation_matrix
+
+error = np.linalg.norm(hamilaton_rotation_matrix - abc, "fro")
+
+
+import ipdb; ipdb.set_trace()
 if np.allclose(hamilaton_rotation_matrix, secondary_rotation_matrix @ primary_rotation_matrix):
     print("HEY its working and both are the same....")
