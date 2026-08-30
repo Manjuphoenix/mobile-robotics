@@ -135,11 +135,14 @@ def matrix_to_axis_angle(
     """
     rotation_matrix is the input which has to be converted back to the axis vector k and angle
     """
-    angle = math.acos((rotation_matrix[1][1] + rotation_matrix[2][2] + rotation_matrix[3][3] -1)/2)
+
+    # import ipdb; ipdb.set_trace()
+    angle = math.acos((rotation_matrix[0][0] + rotation_matrix[1][1] + rotation_matrix[2][2] -1)/2)
     
-    k_vector = (1/(2*math.sin(angle))*(np.array([[rotation_matrix[3][2] - rotation_matrix[2][3],
-                                                [rotation_matrix[1][3] - rotation_matrix[3][1],
-                                                [rotation_matrix[2][1] - rotation_matrix[1][2]]]]])))
+    # import ipdb; ipdb.set_trace()
+    k_vector = 1/(2*math.sin(angle))*(np.array([rotation_matrix[2][1] - rotation_matrix[1][2],
+                                                rotation_matrix[0][2] - rotation_matrix[2][0],
+                                                rotation_matrix[1][0] - rotation_matrix[0][1]]))
 
     # raise NotImplementedError("Implement the inverse angle-axis conversion")
     return (k_vector, angle)
@@ -158,6 +161,7 @@ def quaternion_to_matrix(quaternion: numpy.ndarray) -> numpy.ndarray:
                                     [2*(q[1]*q[3] - q[0]*q[2]), 2*(q[0]*q[1] + q[2]*q[3]), (q[0]**2 - q[1]**2 - q[2]**2 + q[3]**2)]])
     # raise NotImplementedError("Implement the quaternion conversion")
 
+    import ipdb; ipdb.set_trace()
     return quat_rotation_matrix
 
 
@@ -167,13 +171,13 @@ def matrix_to_quaternion(rotation_matrix: numpy.ndarray) -> numpy.ndarray:
     """ 
 
     r = rotation_matrix
-    q_0 = (0.5)*(math.sqrt(1+ r[1][1] + r[2][2] + r[3][3]))
+    q_0 = (0.5)*(math.sqrt(1+ r[0][0] + r[1][1] + r[2][2]))
 
-    q_1, q_2, q_3 = (1/4*q_0)*np.array([[r[3][2]-r[2][3],
-                                                    r[1][3] - r[3][1],
-                                                    r[2][1] - r[1][2]]])
+    q_vector = (1/(4*q_0))*np.array([r[2][1]-r[1][2],
+                                                    r[0][2] - r[2][0],
+                                                    r[1][0] - r[0][1]])
     # raise NotImplementedError("Implement the inverse quaternion conversion")
-    return np.array(q_0, q_1, q_2, q_3)
+    return np.array([q_vector[0], q_vector[1], q_vector[2], q_0])
 
 
 ip = q2_instance.primary_euler_angles
@@ -187,12 +191,15 @@ def orthogonality_error(R):
 
 
 ########################## Testing for table generation #############################
-######################### Method1 #################################
-euler_rotation_matrix = euler_xyz_to_matrix(ip[0], ip[1], ip[2])
-
-import ipdb; ipdb.set_trace()
 
 """
+
+Routes for the table:
+1. Euler_XYZ to Rotation Matrix
+2. Angle axis to Rotation Matrix
+3. Quaternion to Rotation Matrix
+
+
 Points to verify:
 P1 = [1, 0, 0]
 P2 = [0, 1, 0]
@@ -218,27 +225,42 @@ P1 = , P2 = , P3 = , P4 = ,
 
 """
 
-
 ######################### Method1 #################################
+# euler_rotation_matrix = euler_xyz_to_matrix(ip[0], ip[1], ip[2]) # Working..
 
+# import ipdb; ipdb.set_trace()
 
 
 ######################### Method2 #################################
+# angle_axis_to_rotation = axis_angle_to_matrix(np.array([0.7070, 0.7070, 0]), 0.523599)
 
-
+# import ipdb; ipdb.set_trace()
 
 
 ######################### Method3 #################################
 
+# quaternion_to_rotation_matrix = quaternion_to_matrix(numpy.array([-0.559946, 0.609115, 0.553275, -0.096574]))
+# import ipdb; ipdb.set_trace()
 
 
 
-######################### Method4 #################################
+################## RECONSTRUCTION ERROR #########################
+euler_angle = q2_instance.primary_euler_angles
 
 
+true_rotation_matrix = euler_xyz_to_matrix(euler_angle[0], euler_angle[1], euler_angle[2])
 
-######################### Method5 #################################
+# convert this above rotation matrxi to 1. angle-axis and 2. Quaternion format
+angle_axis_converted = matrix_to_axis_angle(true_rotation_matrix)
+quat_converted = matrix_to_quaternion(true_rotation_matrix)
 
+rotation_back_from_angle_axis = axis_angle_to_matrix(angle_axis_converted[0], angle_axis_converted[1])
+rotation_back_from_quat = quaternion_to_matrix(quat_converted)
+
+angle_axis_error = np.linalg.norm(true_rotation_matrix - rotation_back_from_angle_axis, "fro")
+quat_error = np.linalg.norm(true_rotation_matrix - rotation_back_from_quat, "fro")
+
+import ipdb; ipdb.set_trace()
 
 ###################### FOR Visualization purposes ########################
 
