@@ -180,33 +180,41 @@ ip = q2_instance.primary_euler_angles
 
 
 
+########### Orthogonality Error #################
+def orthogonality_error(R):
+    return np.linalg.norm(R @ R.T - np.eye(3))
+
+
+
 ########################## Testing for table generation #############################
 ######################### Method1 #################################
 euler_rotation_matrix = euler_xyz_to_matrix(ip[0], ip[1], ip[2])
 
-
-import open3d as o3d
-
-point = np.array([[1.0, 0.0, 0.0]])
-pcd = o3d.geometry.PointCloud()
-pcd.points = o3d.utility.Vector3dVector(point)
-
-
 import ipdb; ipdb.set_trace()
-axes = o3d.geometry.create_mesh_coordinate_frame(size=1.0, origin=[0, 0, 0])
-
-import ipdb; ipdb.set_trace()
-o3d.visualization.draw_geometries(
-    [pcd, axes],
-    zoom = 0.8,
-    front = [0.7, -0.3, 0.6],
-    lookat = [0, 0, 0],
-    up = [0, 0, 1]
-)
 
 """
+Points to verify:
+P1 = [1, 0, 0]
+P2 = [0, 1, 0]
+P3 = [0, 0, 1]
+P4 = [1, 2, 3]
+
+
 FOR determinant check
-Roll number: det = 1
+Roll Number: det = 1
+P1 = , P2 = , P3 = , P4 = ,
+
+FOR Orthogonality error:
+Rol Number: 
+P1 = 2.2291027918243403e-16, P2 = , P3 = , P4 = ,
+
+FOR Matrix Reconstruction Error:
+Rol Number: 
+P1 = , P2 = , P3 = , P4 = ,
+
+FOR minimum transformed point error:
+Rol Number: 
+P1 = , P2 = , P3 = , P4 = ,
 
 """
 
@@ -232,11 +240,57 @@ Roll number: det = 1
 ######################### Method5 #################################
 
 
-import ipdb; ipdb.set_trace()
-tmp_vector = [1, 1, 1]
-tmp_quat_vector = [1, 1, 1, 1]
+###################### FOR Visualization purposes ########################
 
-angle_axis_rotation_matrix = axis_angle_to_matrix(tmp_vector)
-quat_rotation_matrix = matrix_to_axis_angle()
-quat = matrix_to_quaternion()
-# import ipdb; ipdb.set_trace()
+import open3d as o3d
+import numpy as np
+
+# Single point
+point = np.array([[1.0, 0.0, 0.0]])
+pcd = o3d.geometry.PointCloud()
+pcd.points = o3d.utility.Vector3dVector(point)
+pcd.paint_uniform_color([1.0, 0.0, 0.0])  # make it visibly red
+
+new_point = point @ euler_rotation_matrix
+
+new_pcd = o3d.geometry.PointCloud()
+new_pcd.points = o3d.utility.Vector3dVector(new_point)
+
+
+# --- Line connecting origin -> new_point ---
+origin = np.array([[0.0, 0.0, 0.0]])
+line_points = np.vstack([origin, new_point])  # row0=origin, row1=new_point
+lines = [[0, 1]]
+colors = [[0.0, 0.0, 1.0]]  # blue line
+
+line_set = o3d.geometry.LineSet()
+line_set.points = o3d.utility.Vector3dVector(line_points)
+line_set.lines = o3d.utility.Vector2iVector(lines)
+line_set.colors = o3d.utility.Vector3dVector(colors)
+
+
+# Coordinate frame (modern API)
+axes = o3d.geometry.TriangleMesh.create_coordinate_frame(size=1.0, origin=[0, 0, 0])
+
+# Use a Visualizer so we can control point size
+vis = o3d.visualization.Visualizer()
+vis.create_window()
+vis.add_geometry(pcd)
+vis.add_geometry(axes)
+vis.add_geometry(new_pcd)
+vis.add_geometry(line_set)
+
+opt = vis.get_render_option()
+opt.point_size = 15.0  # default is often 5.0 or smaller-looking
+
+ctr = vis.get_view_control()
+ctr.set_zoom(1.8)
+ctr.set_front([0.7, -0.3, 0.6])
+ctr.set_lookat([0, 0, 0])
+ctr.set_up([0, 0, 1])
+
+vis.run()
+
+vis.capture_screen_image("output.png", do_render=True)
+
+vis.destroy_window()
