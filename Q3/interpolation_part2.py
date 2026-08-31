@@ -79,8 +79,8 @@ def interpolate_transforms(T1, T2, step):
 def rotation_matrix_to_euler_angles(rotation_matrix):
     R = rotation_matrix
     pitch = np.arctan2(-R[2][0], math.sqrt(R[0][0]**2 + R[1][0]**2))
-    roll = np.arctan2(R[1][0]/math.cos(pitch), R[0][0]/math.cos(pitch))
-    yaw = np.arctan2(R[2][1]/math.cos(pitch), R[2][2]/math.cos(pitch))
+    yaw = np.arctan2(R[1][0]/math.cos(pitch), R[0][0]/math.cos(pitch))
+    roll = np.arctan2(R[2][1]/math.cos(pitch), R[2][2]/math.cos(pitch))
 
     return np.array([roll, pitch, yaw])
 

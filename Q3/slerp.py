@@ -160,7 +160,7 @@ def matrix_to_quaternion(rotation_matrix: numpy.ndarray) -> numpy.ndarray:
                                                     r[0][2] - r[2][0],
                                                     r[1][0] - r[0][1]]])
     # raise NotImplementedError("Implement the inverse quaternion conversion")
-    return np.array([quat_vect[0][0], quat_vect[0][1], quat_vect[0][2], q_0])
+    return np.array([q_0, quat_vect[0][0], quat_vect[0][1], quat_vect[0][2]])
 
 
 
@@ -180,6 +180,48 @@ def quaternion_to_matrix(quaternion: numpy.ndarray) -> numpy.ndarray:
     # raise NotImplementedError("Implement the quaternion conversion")
 
     return quat_rotation_matrix
+
+
+
+
+
+def check(path, start, end, name="path"):
+    """
+    Sanity check for one interpolated path. Provided for you - do not modify.
+
+    path  : sequence of 4x4 matrices, path[0] at s = 0 and path[-1] at s = 1
+    start : the 4x4 pose the path is supposed to begin at
+    end   : the 4x4 pose the path is supposed to end at
+
+    Prints the things that are cheap to get wrong: whether the path actually
+    lands on the two poses you asked for, and whether the rotation block is
+    still a rotation at every step along the way.
+    """
+    path = np.asarray(path, dtype=float)
+    assert path.ndim == 3 and path.shape[1:] == (4, 4), (
+        f"expected a sequence of 4x4 matrices, got shape {path.shape}"
+    )
+
+    rotations = path[:, :3, :3]
+    start_gap = np.abs(path[0] - np.asarray(start, dtype=float)).max()
+    end_gap = np.abs(path[-1] - np.asarray(end, dtype=float)).max()
+    orthogonality = np.linalg.norm(
+        np.transpose(rotations, (0, 2, 1)) @ rotations - np.eye(3), axis=(1, 2)
+    )
+    determinants = np.linalg.det(rotations)
+
+    print(f"{name}: {len(path)} poses")
+    print(f"  endpoints           : |T_0 - start| = {start_gap:.2e},"
+          f"   |T_N - end| = {end_gap:.2e}")
+    print(f"  max ||R^T R - I||_F : {orthogonality.max():.3e}")
+    print(f"  det(R) range        : [{determinants.min():.4f},"
+          f" {determinants.max():.4f}]")
+    if max(start_gap, end_gap) > 1e-8:
+        print("  ^^ this path does not land on the poses you asked for.")
+    return {"orthogonality": orthogonality, "determinant": determinants}
+
+
+
 
 
 
@@ -244,7 +286,8 @@ if __name__ == "__main__":
     all_frames = []
 
     frame_paths = []
-
+    
+    tmp_path = []
     for i, s in enumerate(np.linspace(0, 1, n_steps)):
         # T_s = interpolate_transforms(T1, T2, s)
         # # import ipdb; ipdb.set_trace()
@@ -273,6 +316,7 @@ if __name__ == "__main__":
         T_s = np.eye(4)
         T_s[:3, :3] = quat_rot
         T_s[:3, 3:] = trnsl
+        tmp_path.append(T_s)
 
 
         # import ipdb; ipdb.set_trace()
@@ -333,6 +377,8 @@ if __name__ == "__main__":
         frame_paths.append(frame_path)
 
     vis.destroy_window()
+
+    import ipdb; ipdb.set_trace()
 
     images = [imageio.imread(p) for p in frame_paths]
     imageio.mimsave("linear_interpolation_part3.gif", images, fps=15)
