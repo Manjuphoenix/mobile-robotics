@@ -168,13 +168,14 @@ if __name__ == "__main__":
 
     # import ipdb; ipdb.set_trace()
     
-    output_dir = "linear_interpolation"
+    output_dir = "linear_interpolation_part1"
     n_steps = 70
 
     os.makedirs(output_dir, exist_ok=True)
     vis = o3d.visualization.Visualizer()
     vis.create_window(visible=False, width=800, height=600)
 
+    all_frames = []
     frame_paths = []
 
     tmp_paths = []
@@ -185,16 +186,52 @@ if __name__ == "__main__":
         # import ipdb; ipdb.set_trace()
         P_s = ((np.asarray(pcd_f1.points) @ T_s[:3, :3]).T + T_s[:3, 3:]).T
 
+        all_frames.append(P_s)
         # import ipdb; ipdb.set_trace()
 
-        pcd_frame_for_gif = o3d.geometry.PointCloud()
-        pcd_frame_for_gif.points = o3d.utility.Vector3dVector(P_s)
+        # pcd_frame_for_gif = o3d.geometry.PointCloud()
+        # pcd_frame_for_gif.points = o3d.utility.Vector3dVector(P_s)
 
-        if pcd.has_colors():
-            pcd_frame_for_gif.colors = pcd.colors
+        # if pcd.has_colors():
+        #     pcd_frame_for_gif.colors = pcd.colors
 
-        vis.clear_geometries()
-        vis.add_geometry(pcd_frame_for_gif)
+        # vis.clear_geometries()
+        # vis.add_geometry(pcd_frame_for_gif)
+        # vis.poll_events()
+        # vis.update_renderer()
+
+        # frame_path = os.path.join(output_dir, f"frame_{i:03d}.png")
+        # vis.capture_screen_image(frame_path)
+        # frame_paths.append(frame_path)
+
+
+    all_points_stacked = np.vstack(all_frames)
+    global_min = all_points_stacked.min(axis=0)
+    global_max = all_points_stacked.max(axis=0)
+    global_center = (global_min + global_max) / 2.0
+    global_extent = np.linalg.norm(global_max - global_min)  # diagonal size of the swept volume
+
+    # Add one geometry object that we will just mutate every frame (not re-add)
+    pcd_frame_for_gif = o3d.geometry.PointCloud()
+    pcd_frame_for_gif.points = o3d.utility.Vector3dVector(
+        np.ascontiguousarray(all_frames[0], dtype=np.float64)
+    )
+
+    vis.add_geometry(pcd_frame_for_gif)
+
+    ctr = vis.get_view_control()
+    ctr.set_lookat(global_center)
+    ctr.set_front([0.5, -0.5, 0.5])
+    ctr.set_up([0.0, 0.0, 1.0])
+    zoom_value = np.clip(0.0001 / (global_extent + 1e-6), 2.0, 20.0)
+    ctr.set_zoom(zoom_value)
+
+
+    for i, P_s in enumerate(all_frames):
+        pcd_frame_for_gif.points = o3d.utility.Vector3dVector(
+            np.ascontiguousarray(P_s, dtype=np.float64)
+        )
+        vis.update_geometry(pcd_frame_for_gif)   # tell it the points changed
         vis.poll_events()
         vis.update_renderer()
 
@@ -202,11 +239,11 @@ if __name__ == "__main__":
         vis.capture_screen_image(frame_path)
         frame_paths.append(frame_path)
 
-    import ipdb; ipdb.set_trace()
-
     vis.destroy_window()
 
+    import ipdb; ipdb.set_trace()
+
     images = [imageio.imread(p) for p in frame_paths]
-    imageio.mimsave("linear_interpolation.gif", images, fps=15)
+    imageio.mimsave("linear_interpolation_part1.gif", images, fps=15)
     print(f"Images saved succesfully at{output_dir}")
 
