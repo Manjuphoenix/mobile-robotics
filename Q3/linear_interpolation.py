@@ -64,15 +64,55 @@ def random_transformation_matrix(translation_range=(-1.0, 1.0), seed=None):
 
 
 def interpolate_transforms(T1, T2, step):
+    ######## This for slerp hence these variables are not used below..#############
     R1, R2 = T1[:3, :3], T2[:3, :3]
     Tl1, Tl2 = T1[:3, 3:], T2[:3, 3:]
 
     T = np.eye(4)
 
-    T = (1-3)*T1 + s*T2
+    T = (1-s)*T1 + s*T2
 
     return T
 
+
+
+import numpy as np
+
+
+def check(path, start, end, name="path"):
+    """
+    Sanity check for one interpolated path. Provided for you - do not modify.
+
+    path  : sequence of 4x4 matrices, path[0] at s = 0 and path[-1] at s = 1
+    start : the 4x4 pose the path is supposed to begin at
+    end   : the 4x4 pose the path is supposed to end at
+
+    Prints the things that are cheap to get wrong: whether the path actually
+    lands on the two poses you asked for, and whether the rotation block is
+    still a rotation at every step along the way.
+    """
+    path = np.asarray(path, dtype=float)
+    assert path.ndim == 3 and path.shape[1:] == (4, 4), (
+        f"expected a sequence of 4x4 matrices, got shape {path.shape}"
+    )
+
+    rotations = path[:, :3, :3]
+    start_gap = np.abs(path[0] - np.asarray(start, dtype=float)).max()
+    end_gap = np.abs(path[-1] - np.asarray(end, dtype=float)).max()
+    orthogonality = np.linalg.norm(
+        np.transpose(rotations, (0, 2, 1)) @ rotations - np.eye(3), axis=(1, 2)
+    )
+    determinants = np.linalg.det(rotations)
+
+    print(f"{name}: {len(path)} poses")
+    print(f"  endpoints           : |T_0 - start| = {start_gap:.2e},"
+          f"   |T_N - end| = {end_gap:.2e}")
+    print(f"  max ||R^T R - I||_F : {orthogonality.max():.3e}")
+    print(f"  det(R) range        : [{determinants.min():.4f},"
+          f" {determinants.max():.4f}]")
+    if max(start_gap, end_gap) > 1e-8:
+        print("  ^^ this path does not land on the poses you asked for.")
+    return {"orthogonality": orthogonality, "determinant": determinants}
 
 
 
@@ -89,7 +129,8 @@ if __name__ == "__main__":
     #     print(f"{name} R @ R.T ≈ I:\n{np.round(R @ R.T, 4)}")
 
     # Read the toothless point cloud data here..
-    pcd = o3d.io.read_point_cloud("/Users/manjunath/mobile-robotics/assets/toothless.ply")
+    # pcd = o3d.io.read_point_cloud("/Users/manjunath/mobile-robotics/assets/toothless.ply")
+    pcd = o3d.io.read_point_cloud("../assets/toothless.ply")
     points = np.asarray(pcd.points)
     # o3d.visualization.draw_geometries([pcd])
 
@@ -128,10 +169,15 @@ if __name__ == "__main__":
 
     frame_paths = []
 
+    tmp_paths = []
+
     for i, s in enumerate(np.linspace(0, 1, n_steps)):
         T_s = interpolate_transforms(T1, T2, s)
+        tmp_paths.append(T_s)
         # import ipdb; ipdb.set_trace()
         P_s = ((np.asarray(pcd_f1.points) @ T_s[:3, :3]).T + T_s[:3, 3:]).T
+
+        # import ipdb; ipdb.set_trace()
 
         pcd_frame_for_gif = o3d.geometry.PointCloud()
         pcd_frame_for_gif.points = o3d.utility.Vector3dVector(P_s)
@@ -147,6 +193,8 @@ if __name__ == "__main__":
         frame_path = os.path.join(output_dir, f"frame_{i:03d}.png")
         vis.capture_screen_image(frame_path)
         frame_paths.append(frame_path)
+
+    import ipdb; ipdb.set_trace()
 
     vis.destroy_window()
 
