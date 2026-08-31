@@ -408,25 +408,27 @@ if __name__ == "__main__":
 
 
     # linear_ortho_error = np.load("linear_ortho_error.npy")
-    # euler_ortho_error = np.load("euler_ortho_error.npy")
-    # quat_ortho_error = np.load("quat_ortho_error.npy")
+    euler_ortho_error = np.load("euler_ortho_error.npy")
+    quat_ortho_error = np.load("quat_ortho_error.npy")
 
 
-    linear_ortho_error = np.load("linear_path_error.npy")
-    euler_ortho_error = np.load("euler_path_error.npy")
-    quat_ortho_error = np.load("quat_path_error.npy")
+    # linear_ortho_error = np.load("linear_path_error.npy")
+    # euler_ortho_error = np.load("euler_path_error.npy")
+    # quat_ortho_error = np.load("quat_path_error.npy")
+
+    n_pts = len(euler_ortho_error)
+    step_size = np.arange(n_pts)
+
 
     plt.figure(figsize=(30, 10))
-    x = np.linspace(0, 100, 69)
-    y = np.linspace(0, 100, 69)
-    z = np.linspace(0, 100, 69)
-    plt.plot(linear_ortho_error, euler_ortho_error, label="Linear-Euler", linewidth=2)
-    plt.plot(euler_ortho_error, quat_ortho_error, label="Euler-Quaternion", linewidth=2)
-    plt.plot(quat_ortho_error, linear_ortho_error, label="Quaternion-Linear", linewidth=2)
+    # plt.plot(step_size, linear_ortho_error, label="Linear", linewidth=2)
+    plt.plot(step_size, euler_ortho_error, label="Euler", linewidth=5)
+    plt.plot(step_size, quat_ortho_error, label="Quaternion", linewidth=2)
 
-    plt.xlabel("x", fontsize=12)
-    plt.ylabel("y", fontsize=12)
-    plt.title("Plot of step wise angle plot using the three methods....", fontsize=14)
+    plt.xlabel("Interpolation step", fontsize=12)
+    plt.ylabel("Per step geodesic angle (degrees)", fontsize=12)
+    plt.title("Plot of orthogonal error of Euler vs Quaternion method....", fontsize=14)
+    # plt.title("Plot of step wise angle plot for Euler vs Quaternion method....", fontsize=14)
     plt.legend(fontsize=11)
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
