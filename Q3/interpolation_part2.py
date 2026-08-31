@@ -169,7 +169,11 @@ def check(path, start, end, name="path"):
 
 
 if __name__ == "__main__":
-    T1 = random_transformation_matrix(translation_range=(-1.0, 1.0), seed=1)
+    # T1 = random_transformation_matrix(translation_range=(-1.0, 1.0), seed=1)
+    T1 = np.array([[-0.02364325,  0.93781144,  0.34633901, 17.94597789],
+       [ 0.55996768, -0.27456738,  0.7816962 , -7.52674192],
+       [ 0.82817703,  0.21242049, -0.51865243, -3.06694204],
+       [ 0.        ,  0.        ,  0.        ,  1.        ]])
     
     print("T1 =\n", T1)
     # print("\nT2 =\n", T2)
@@ -192,7 +196,11 @@ if __name__ == "__main__":
     Tl1 = T1[:3, 3:]
 
 
-    T2 = random_transformation_matrix(translation_range=(-1.0, 1.0), seed=10)
+    # T2 = random_transformation_matrix(translation_range=(-1.0, 1.0), seed=10)
+    T2 = np.array([[ -0.91200342,  -0.28221969,  -0.29766056, -21.04307262],
+       [  0.09231014,   0.56584878,  -0.81932533,   0.76827699],
+       [  0.39966061,  -0.77470459,  -0.49000428, -21.84482376],
+       [  0.        ,   0.        ,   0.        ,   1.        ]])
     R2 = T2[:3, :3]
     Tl2 = T2[:3, 3:]
 
